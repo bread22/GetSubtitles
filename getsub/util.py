@@ -3,6 +3,8 @@
 import os
 import zipfile
 from os import path
+from tempfile import TemporaryDirectory, NamedTemporaryFile
+from shutil import make_archive
 
 from io import BytesIO
 from shutil import get_terminal_size
@@ -10,7 +12,8 @@ from shutil import get_terminal_size
 import rarfile
 from guessit import guessit
 
-from getsub.py7z import Py7z
+from pyunpack import Archive
+
 from getsub.constants import SUB_FORMATS, ARCHIVE_TYPES, VIDEO_FORMATS, PREFIX
 
 
@@ -316,7 +319,8 @@ def get_file_list(data, datatype):
     if datatype == ".7z":
         try:
             sub_buff.seek(0)
-            file_handler = Py7z(sub_buff)
+            sub_buff = _convert_7z_to_zip(sub_buff)
+            datatype = ".zip"
         except Exception:
             datatype = ".zip"  # try with zipfile
     if datatype == ".zip":
@@ -438,3 +442,41 @@ def process_archive(
         except UnicodeDecodeError:
             print(PREFIX + " " + extract_sub_name.encode("gbk"))
     return error, extract_subs
+
+
+def _convert_7z_to_zip(sub_buff):
+    """ Convert 7z buff to zip buff
+
+    This is for Synology compatibility, which cannot install pylzma.
+    So have to fall back to crude method provided by pyunpack/patool.
+    Convert the buff to a zip buff for minimizing code structure change.
+
+    1. write to a 7z file
+    2. extract this 7z file
+    3. add content of extracted directory to a new zip file
+    4. read the new zip file and return
+
+    Arguments:
+        sub_buff {byte} -- 7z file buff
+
+    Returns:
+        [byte] -- zip file buff
+    """
+    archivefile_7z = NamedTemporaryFile()
+    archivefile_zip = NamedTemporaryFile()
+    tempdir = TemporaryDirectory()
+
+    # extract files from 7z IO buffer
+    with open(archivefile_7z.name, 'wb') as f:
+        f.write(sub_buff.read())
+    archive = Archive(archivefile_7z.name)
+    archive.extractall(tempdir.name)
+
+    # get file lists and add them to zip archive
+    make_archive(archivefile_zip.name, 'zip', tempdir.name)
+
+    # read zip file and return
+    with open(archivefile_zip.name + '.zip', 'rb') as f:
+        data = f.read()
+
+    return BytesIO(data)

@@ -15,7 +15,8 @@ setup(
         "beautifulsoup4>=4.4.0",
         "guessit==3.1.0",
         "rarfile>=3.0",
-        "pylzma>=0.5.0",
+        "pyunpack>=0.1.2",
+        "patool>=1.12"
     ],
     entry_points={"console_scripts": ["getsub = getsub.main: main"]},
     zip_safe=False,

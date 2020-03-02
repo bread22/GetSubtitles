@@ -45,9 +45,9 @@ class TestGetFileList(unittest.TestCase):
         result = {
             "dir1/sub1.ass": zipfile.ZipFile,
             "dir2/sub2.ass": zipfile.ZipFile,
-            "dir3/dir4/sub.ass": Py7z,
-            "dir3/sub.srt": Py7z,
-            "archive/sub4.sub": Py7z,
+            "dir3/dir4/sub.ass": zipfile.ZipFile,
+            "dir3/sub.srt": zipfile.ZipFile,
+            "archive/sub4.sub": zipfile.ZipFile,
         }
         for sub, handler in sub_lists.items():
             self.assertTrue(isinstance(handler, result[sub]))
